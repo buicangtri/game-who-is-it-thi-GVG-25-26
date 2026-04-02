@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Who is it? – Hạt nhân bí ẩn</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: #f5f7fb;
+      color: #1f2937;
+    }
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    h1 {
+      margin-bottom: 8px;
+      font-size: 28px;
+    }
+    .subtitle {
+      color: #4b5563;
+      margin-bottom: 20px;
+    }
+    .panel {
+      background: white;
+      border-radius: 14px;
+      padding: 16px;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+      margin-bottom: 16px;
+    }
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+    button {
+      padding: 10px 14px;
+      border-radius: 10px;
+      border: 1px solid #cbd5e1;
+      background: white;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    button.primary {
+      background: #2563eb;
+      color: white;
+      border-color: #2563eb;
+    }
+    .answer-box {
+      margin-top: 12px;
+      font-weight: bold;
+      color: #0f766e;
+      min-height: 24px;
+    }
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+    }
+    .card {
+      background: white;
+      border: 2px solid #dbeafe;
+      border-radius: 16px;
+      padding: 14px;
+      min-height: 180px;
+      cursor: pointer;
+      transition: 0.2s ease;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+    }
+    .card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 18px rgba(0,0,0,0.08);
+    }
+    .card.eliminated {
+      opacity: 0.28;
+      filter: grayscale(0.95);
+    }
+    .nuclear {
+      position: relative;
+      display: inline-block;
+      padding-left: 18px;
+      margin-bottom: 14px;
+      line-height: 1;
+    }
+    .symbol {
+      font-size: 40px;
+      font-weight: bold;
+      color: #1d4ed8;
+    }
+    .mass-number {
+      position: absolute;
+      left: 0;
+      top: -6px;
+      font-size: 16px;
+      font-weight: bold;
+      color: #111827;
+    }
+    .atomic-number {
+      position: absolute;
+      left: 0;
+      bottom: -4px;
+      font-size: 16px;
+      font-weight: bold;
+      color: #111827;
+    }
+    .element-name {
+      font-size: 16px;
+      font-weight: 600;
+      color: #374151;
+      margin-top: 10px;
+    }
+    .secret {
+      display: inline-block;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: #dbeafe;
+      color: #1d4ed8;
+      font-weight: bold;
+      margin-top: 10px;
+    }
+    .footer-note {
+      color: #6b7280;
+      font-size: 13px;
+      margin-top: 10px;
+    }
+    @media (max-width: 900px) {
+      .cards {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+    @media (max-width: 520px) {
+      .cards {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Who is it? – Hạt nhân bí ẩn</h1>
+    <div class="subtitle">Phiên bản tối giản để giáo viên loại dần các thẻ và tự trả lời câu hỏi của học sinh.</div>
+
+    <div class="panel">
+      <div class="controls">
+        <button class="primary" onclick="startGame()">Chọn hạt nhân bí ẩn mới</button>
+        <button onclick="toggleReveal()">Hiện / Ẩn đáp án giáo viên</button>
+        <button onclick="resetBoard()">Khôi phục tất cả thẻ</button>
+      </div>
+      <div id="secretBox" class="secret" style="display:none"></div>
+      <div id="answerBox" class="answer-box"></div>
+      <div class="footer-note">Bấm vào từng thẻ để làm mờ thẻ đã bị loại. Giao diện chỉ giữ thông tin hiển thị trên thẻ theo đúng kiểu ký hiệu hạt nhân.</div>
+    </div>
+
+    <div class="cards" id="cards"></div>
+  </div>
+
+  <script>
+    const nuclei = [
+      { id: 1, symbol: 'H', name: 'Hydrogen-1', Z: 1, A: 1 },
+      { id: 2, symbol: 'H', name: 'Hydrogen-2', Z: 1, A: 2 },
+      { id: 3, symbol: 'He', name: 'Helium-4', Z: 2, A: 4 },
+      { id: 4, symbol: 'Li', name: 'Lithium-7', Z: 3, A: 7 },
+      { id: 5, symbol: 'C', name: 'Carbon-12', Z: 6, A: 12 },
+      { id: 6, symbol: 'C', name: 'Carbon-14', Z: 6, A: 14 },
+      { id: 7, symbol: 'O', name: 'Oxygen-16', Z: 8, A: 16 },
+      { id: 8, symbol: 'F', name: 'Fluorine-19', Z: 9, A: 19 },
+      { id: 9, symbol: 'Na', name: 'Sodium-23', Z: 11, A: 23 },
+      { id: 10, symbol: 'Al', name: 'Aluminium-27', Z: 13, A: 27 },
+      { id: 11, symbol: 'Fe', name: 'Iron-56', Z: 26, A: 56 },
+      { id: 12, symbol: 'Cu', name: 'Copper-63', Z: 29, A: 63 },
+      { id: 13, symbol: 'U', name: 'Uranium-235', Z: 92, A: 235 },
+      { id: 14, symbol: 'U', name: 'Uranium-238', Z: 92, A: 238 },
+      { id: 15, symbol: 'I', name: 'Iodine-131', Z: 53, A: 131 },
+      { id: 16, symbol: 'Ne', name: 'Neon-20', Z: 10, A: 20 }
+    ];
+
+    let secret = null;
+    let reveal = false;
+
+    function renderCards() {
+      const root = document.getElementById('cards');
+      root.innerHTML = nuclei.map(n => `
+        <div class="card" id="card-${n.id}" onclick="toggleCard(${n.id})">
+          <div class="nuclear" aria-label="ký hiệu hạt nhân ${n.name}">
+            <span class="mass-number">${n.A}</span>
+            <span class="atomic-number">${n.Z}</span>
+            <span class="symbol">${n.symbol}</span>
+          </div>
+          <div class="element-name">${n.name}</div>
+        </div>
+      `).join('');
+    }
+
+    function startGame() {
+      secret = nuclei[Math.floor(Math.random() * nuclei.length)];
+      document.getElementById('answerBox').textContent = 'Đã chọn xong hạt nhân bí ẩn.';
+      updateSecretBox();
+      resetBoard();
+    }
+
+    function updateSecretBox() {
+      const box = document.getElementById('secretBox');
+      if (!secret) {
+        box.style.display = 'none';
+        return;
+      }
+      if (reveal) {
+        box.style.display = 'inline-block';
+        box.textContent = `Đáp án giáo viên: ^${secret.A}_${secret.Z}${secret.symbol} – ${secret.name}`;
+      } else {
+        box.style.display = 'none';
+      }
+    }
+
+    function toggleReveal() {
+      reveal = !reveal;
+      updateSecretBox();
+    }
+
+    function toggleCard(id) {
+      const el = document.getElementById(`card-${id}`);
+      el.classList.toggle('eliminated');
+    }
+
+    function resetBoard() {
+      document.querySelectorAll('.card').forEach(c => c.classList.remove('eliminated'));
+    }
+
+    renderCards();
+    startGame();
+  </script>
+</body>
+</html>
